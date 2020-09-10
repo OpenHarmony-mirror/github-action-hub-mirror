@@ -12,8 +12,8 @@ jobs:
       with:
         src: gitee/openharmony
         dst: github/OpenHarmony-mirror
-        dst_key: ${{ secrets.GITHUB_PRIVATE_KEY }}
-        dst_token: ${{ secrets.GITHUB_TOKEN }}
+        dst_key: ${{ secrets.MYGITHUB_PRIVATE_KEY }}
+        dst_token: ${{ secrets.MYGITHUB_TOKEN }}
         account_type: org
         force_update: true
         debug: true
