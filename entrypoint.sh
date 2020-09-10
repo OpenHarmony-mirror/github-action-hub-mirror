@@ -38,13 +38,34 @@ function err_exit {
   exit 1
 }
 
+function get_repo_list
+{
+  PARAM_REPO_LIST_API=$1
+  shift
+  PARAM_FN_OUT=$1
+  shift
+
+  FN_TMP=/tmp/tmp-mirror.txt
+  rm -f out.txt "${PARAM_FN_OUT}" "${FN_TMP}"
+  curl $PARAM_REPO_LIST_API > out.txt
+  cat out.txt | jq '.[] | .name' |  sed 's/"//g' > "${PARAM_FN_OUT}"
+  cnt=`cat "${PARAM_FN_OUT}" | wc -l`
+  pg=2
+  while [[ $cnt > 0 ]]; do
+    curl "${PARAM_REPO_LIST_API}&page=$pg" | jq '.[] | .name' |  sed 's/"//g' > "${FN_TMP}"
+    cat "${FN_TMP}" >> "${PARAM_FN_OUT}"
+    cnt=`cat "${FN_TMP}" | wc -l`
+    pg=$((pg + 1))
+  done
+}
+
 if [[ "$ACCOUNT_TYPE" == "org" ]]; then
-  SRC_LIST_URL_SUFFIX=orgs/$SRC_ACCOUNT/repos
-  DST_LIST_URL_SUFFIX=orgs/$DST_ACCOUNT/repos
+  SRC_LIST_URL_SUFFIX=orgs/$SRC_ACCOUNT/repos?per_page=100
+  DST_LIST_URL_SUFFIX=orgs/$DST_ACCOUNT/repos?per_page=100
   DST_CREATE_URL_SUFFIX=orgs/$DST_ACCOUNT/repos
 elif [[ "$ACCOUNT_TYPE" == "user" ]]; then
-  SRC_LIST_URL_SUFFIX=users/$SRC_ACCOUNT/repos
-  DST_LIST_URL_SUFFIX=users/$DST_ACCOUNT/repos
+  SRC_LIST_URL_SUFFIX=users/$SRC_ACCOUNT/repos?per_page=100
+  DST_LIST_URL_SUFFIX=users/$DST_ACCOUNT/repos?per_page=100
   DST_CREATE_URL_SUFFIX=user/repos
 else
   err_exit "Unknown account type, the `account_type` should be `user` or `org`"
@@ -69,7 +90,8 @@ else
 fi
 
 if [[ -z $STATIC_LIST ]]; then
-  SRC_REPOS=`curl $SRC_REPO_LIST_API | jq '.[] | .name' |  sed 's/"//g'`
+  get_repo_list ${SRC_REPO_LIST_API} "/tmp/tmp-repo-list-src.txt"
+  SRC_REPOS=`cat "/tmp/tmp-repo-list-src.txt"`
 else
   SRC_REPOS=`echo $STATIC_LIST | tr ',' ' '`
 fi
@@ -96,7 +118,8 @@ function clone_repo
 function create_repo
 {
   # Auto create non-existing repo
-  has_repo=`curl $DST_REPO_LIST_API | jq '.[] | select(.full_name=="'$DST_ACCOUNT'/'$1'").name' | wc -l`
+  get_repo_list ${DST_REPO_LIST_API} "/tmp/tmp-mirror-list.txt"
+  has_repo=`cat "/tmp/tmp-mirror-list.txt" | grep $1 | wc -l`
   if [ $has_repo == 0 ]; then
     echo "Create non-exist repo..."
     if [[ "$DST_TYPE" == "github" ]]; then
