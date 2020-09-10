@@ -1,0 +1,19 @@
+on: push
+name: MyMirror / openharmony-mirror
+jobs:
+  run:
+    name: Run
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source codes
+      uses: actions/checkout@v1
+    - name: Mirror OpenHarmony from Gitee to Github
+      uses: ./.
+      with:
+        src: gitee/openharmony
+        dst: github/OpenHarmony-mirror
+        dst_key: ${{ secrets.GITHUB_PRIVATE_KEY }}
+        dst_token: ${{ secrets.GITHUB_TOKEN }}
+        account_type: org
+        force_update: true
+        debug: true
