@@ -106,9 +106,19 @@ fi
 if [[ "$DST_TYPE" == "github" ]]; then
   DST_REPO_CREATE_API=https://api.github.com/$DST_CREATE_URL_SUFFIX
   DST_REPO_LIST_API=https://api.github.com/$DST_LIST_URL_SUFFIX
+  if [[ "$CLONE_STYLE" == "ssh" ]]; then
+    DST_REPO_BASE_URL=git@github.com:
+  elif [[ "$CLONE_STYLE" == "https" ]]; then
+    DST_REPO_BASE_URL=https://github.com/
+  fi
 elif [[ "$DST_TYPE" == "gitee" ]]; then
   DST_REPO_CREATE_API=https://gitee.com/api/v5/$DST_CREATE_URL_SUFFIX
   DST_REPO_LIST_API=https://gitee.com/api/v5/$DST_LIST_URL_SUFFIX
+  if [[ "$CLONE_STYLE" == "ssh" ]]; then
+    DST_REPO_BASE_URL=git@gitee.com:
+  elif [[ "$CLONE_STYLE" == "https" ]]; then
+    DST_REPO_BASE_URL=https://gitee.com/
+  fi
 else
   err_exit "Unknown dst args, the `dst` should be `[github|gittee]/account`"
 fi
@@ -135,7 +145,7 @@ function create_repo
       curl -X POST --header 'Content-Type: application/json;charset=UTF-8' $DST_REPO_CREATE_API -d '{"name": "'$1'","access_token": "'$2'"}'
     fi
   fi
-  git remote add $DST_TYPE git@$DST_TYPE.com:$DST_ACCOUNT/$1.git
+  git remote add $DST_TYPE $DST_REPO_BASE_URL$DST_ACCOUNT/$1.git
 }
 
 function update_repo
@@ -148,6 +158,7 @@ function import_repo
 {
   echo -e "\033[31m(2/3)\033[0m" "Importing..."
   git remote set-head origin -d
+  git remote -v
   if [[ "$FORCE_UPDATE" == "true" ]]; then
     git push -f $DST_TYPE refs/remotes/origin/*:refs/heads/* --tags --prune
   else
