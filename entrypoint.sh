@@ -46,9 +46,10 @@ function get_repo_list
   shift
 
   FN_TMP=/tmp/tmp-mirror.txt
-  rm -f out.txt "${PARAM_FN_OUT}" "${FN_TMP}"
-  curl $PARAM_REPO_LIST_API > out.txt
-  cat out.txt | jq '.[] | .name' |  sed 's/"//g' > "${PARAM_FN_OUT}"
+  rm -f "${PARAM_FN_OUT}" "${FN_TMP}"
+
+  curl $PARAM_REPO_LIST_API > "${FN_TMP}"
+  cat "${FN_TMP}" | jq '.[] | .name' |  sed 's/"//g' > "${PARAM_FN_OUT}"
   cnt=`cat "${PARAM_FN_OUT}" | wc -l`
   pg=2
   while [[ $cnt > 0 ]]; do
