@@ -9,7 +9,7 @@ inputs:
     description: "The private SSH key which is used to to push code in destination hub."
     required: true
   dst_token:
-    description: "The app token which is used to  create repo in destination hub."
+    description: "The app token which is used to create repo in destination hub."
     required: true
   dst:
     description: "Destination name. Such as `gitee/kunpengcompute`."
@@ -17,8 +17,11 @@ inputs:
   src:
     description: "Source name. Such as `github/kunpengcompute`."
     required: true
-  account_type:
-    description: "The account type. Such as org, user."
+  src_account_type:
+    description: "The source account type. Such as org, user."
+    default: 'user'
+  dst_account_type:
+    description: "The destination account type. Such as org, user."
     default: 'user'
   clone_style:
     description: "The git clone style, https or ssh."
