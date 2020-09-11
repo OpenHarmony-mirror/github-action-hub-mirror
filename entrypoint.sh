@@ -109,7 +109,7 @@ if [[ "$DST_TYPE" == "github" ]]; then
   if [[ "$CLONE_STYLE" == "ssh" ]]; then
     DST_REPO_BASE_URL=git@github.com:
   elif [[ "$CLONE_STYLE" == "https" ]]; then
-    DST_REPO_BASE_URL=https://github.com/
+    DST_REPO_BASE_URL="https://${DST_TOKEN}:x-oauth-basic@github.com/"
   fi
 elif [[ "$DST_TYPE" == "gitee" ]]; then
   DST_REPO_CREATE_API=https://gitee.com/api/v5/$DST_CREATE_URL_SUFFIX
@@ -117,7 +117,7 @@ elif [[ "$DST_TYPE" == "gitee" ]]; then
   if [[ "$CLONE_STYLE" == "ssh" ]]; then
     DST_REPO_BASE_URL=git@gitee.com:
   elif [[ "$CLONE_STYLE" == "https" ]]; then
-    DST_REPO_BASE_URL=https://gitee.com/
+    DST_REPO_BASE_URL="https://${DST_TOKEN}:x-oauth-basic@gitee.com/"
   fi
 else
   err_exit "Unknown dst args, the `dst` should be `[github|gittee]/account`"
@@ -134,9 +134,10 @@ function clone_repo
 
 function create_repo
 {
+  FN_LIST=$3
   # Auto create non-existing repo
-  get_repo_list ${DST_REPO_LIST_API} "/tmp/tmp-mirror-list.txt"
-  has_repo=`cat "/tmp/tmp-mirror-list.txt" | grep $1 | wc -l`
+  get_repo_list ${DST_REPO_LIST_API} "${FN_LIST}"
+  has_repo=`cat "${FN_LIST}" | grep $1 | wc -l`
   if [ $has_repo == 0 ]; then
     echo "Create non-exist repo..."
     if [[ "$DST_TYPE" == "github" ]]; then
@@ -158,11 +159,12 @@ function import_repo
 {
   echo -e "\033[31m(2/3)\033[0m" "Importing..."
   git remote set-head origin -d
+  git --version
   git remote -v
   if [[ "$FORCE_UPDATE" == "true" ]]; then
-    git push -f $DST_TYPE refs/remotes/origin/*:refs/heads/* --tags --prune
+    git push -f $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
   else
-    git push $DST_TYPE refs/remotes/origin/*:refs/heads/* --tags --prune
+    git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
   fi
 }
 
@@ -198,6 +200,8 @@ if [ ! -d "$CACHE_PATH" ]; then
 fi
 cd $CACHE_PATH
 
+get_repo_list ${DST_REPO_LIST_API} "/tmp/tmp-mirror-list-dst.txt"
+
 for repo in $SRC_REPOS
 {
   if test_black_white_list $repo ; then
@@ -205,7 +209,7 @@ for repo in $SRC_REPOS
 
     clone_repo $repo || echo "clone and cd failed"
 
-    create_repo $repo $DST_TOKEN || echo "create failed"
+    create_repo $repo $DST_TOKEN "/tmp/tmp-mirror-list-dst.txt" || echo "create failed"
 
     update_repo || echo "Update failed"
 
