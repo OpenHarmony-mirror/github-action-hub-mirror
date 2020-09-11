@@ -1,5 +1,9 @@
-on: push
-name: MyMirror / openharmony-mirror
+on:
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+  schedule:
+    - cron:  '* 11 * * 6'
+
+name: Mirror / openharmony
 jobs:
   run:
     name: Run
