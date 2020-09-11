@@ -132,7 +132,6 @@ function clone_repo
   if [ ! -d "$1" ]; then
     git clone $SRC_REPO_BASE_URL$SRC_ACCOUNT/$1.git
   fi
-  cd $1
 }
 
 function create_repo
@@ -148,18 +147,23 @@ function create_repo
       curl -X POST --header 'Content-Type: application/json;charset=UTF-8' $DST_REPO_CREATE_API -d '{"name": "'$1'","access_token": "'$2'"}'
     fi
   fi
-  git remote add $DST_TYPE $DST_REPO_BASE_URL$DST_ACCOUNT/$1.git
+  cd $1 && git remote add $DST_TYPE $DST_REPO_BASE_URL$DST_ACCOUNT/$1.git && cd ..
 }
 
 function update_repo
 {
-  echo -e "\033[31m(1/3)\033[0m" "Updating..."
-  git pull -p
+  echo -e "\033[31m(1/3)\033[0m" "Updating $1 ..."
+  cd $1 && git pull -p && cd ..
 }
 
 function import_repo
 {
-  echo -e "\033[31m(2/3)\033[0m" "Importing..."
+  echo -e "\033[31m(2/3)\033[0m" "Importing $1 ..."
+  cd $1
+  if [ ! $? = 0 ]; then
+    echo "no such directory: $1"
+    return
+  fi
   git remote set-head origin -d
   git --version
   git remote -v
@@ -170,6 +174,7 @@ function import_repo
     #git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
     git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags
   fi
+  cd ..
 }
 
 function _check_in_list () {
@@ -215,11 +220,9 @@ for repo in $SRC_REPOS
 
     create_repo $repo $DST_TOKEN "${FN_LIST_DST}" || echo "create failed"
 
-    update_repo || echo "Update failed"
+    update_repo $repo || echo "Update failed"
 
-    import_repo || err_exit "Push failed"
-
-    cd ..
+    import_repo $repo || err_exit "Push failed"
   fi
 }
 
