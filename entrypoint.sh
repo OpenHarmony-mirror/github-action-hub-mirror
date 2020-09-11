@@ -50,7 +50,6 @@ function get_repo_list
   shift
 
   local FN_TMP=/tmp/tmp-mirror.txt
-  rm -f "${PARAM_FN_OUT}" "${FN_TMP}"
 
   curl $PARAM_REPO_LIST_API > "${FN_TMP}"
   cat "${FN_TMP}" | jq '.[] | .name' |  sed 's/"//g' > "${PARAM_FN_OUT}"
@@ -62,6 +61,7 @@ function get_repo_list
     cnt=`cat "${FN_TMP}" | wc -l`
     pg=$((pg + 1))
   done
+  rm -f "${FN_TMP}"
 }
 
 if [[ "$SRC_ACCOUNT_TYPE" == "org" ]]; then
@@ -222,3 +222,6 @@ for repo in $SRC_REPOS
     cd ..
   fi
 }
+
+rm -f "${FN_LIST_DST}"
+rm -f "${FN_LIST_SRC}"
