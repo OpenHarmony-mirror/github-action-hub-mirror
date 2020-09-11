@@ -1,4 +1,7 @@
 on:
+  push:
+    branches:
+      - gitee2github-openharmony
   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
   schedule:
     - cron:  '* 11 * * 6'
