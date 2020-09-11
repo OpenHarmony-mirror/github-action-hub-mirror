@@ -6,6 +6,9 @@ if [[ "$DEBUG" == "true" ]]; then
   set -x
 fi
 
+FN_LIST_DST="/tmp/tmp-mirror-list-dst.txt"
+FN_LIST_SRC="/tmp/tmp-mirror-list-src.txt"
+
 mkdir -p /root/.ssh
 echo "${INPUT_DST_KEY}" > /root/.ssh/id_rsa
 chmod 600 /root/.ssh/id_rsa
@@ -41,12 +44,12 @@ function err_exit {
 
 function get_repo_list
 {
-  PARAM_REPO_LIST_API=$1
+  local PARAM_REPO_LIST_API=$1
   shift
-  PARAM_FN_OUT=$1
+  local PARAM_FN_OUT=$1
   shift
 
-  FN_TMP=/tmp/tmp-mirror.txt
+  local FN_TMP=/tmp/tmp-mirror.txt
   rm -f "${PARAM_FN_OUT}" "${FN_TMP}"
 
   curl $PARAM_REPO_LIST_API > "${FN_TMP}"
@@ -97,8 +100,8 @@ else
 fi
 
 if [[ -z $STATIC_LIST ]]; then
-  get_repo_list ${SRC_REPO_LIST_API} "/tmp/tmp-repo-list-src.txt"
-  SRC_REPOS=`cat "/tmp/tmp-repo-list-src.txt"`
+  get_repo_list ${SRC_REPO_LIST_API} "${FN_LIST_SRC}"
+  SRC_REPOS=`cat "${FN_LIST_SRC}"`
 else
   SRC_REPOS=`echo $STATIC_LIST | tr ',' ' '`
 fi
@@ -134,9 +137,8 @@ function clone_repo
 
 function create_repo
 {
-  FN_LIST=$3
+  local FN_LIST=$3
   # Auto create non-existing repo
-  get_repo_list ${DST_REPO_LIST_API} "${FN_LIST}"
   has_repo=`cat "${FN_LIST}" | grep $1 | wc -l`
   if [ $has_repo == 0 ]; then
     echo "Create non-exist repo..."
@@ -162,9 +164,11 @@ function import_repo
   git --version
   git remote -v
   if [[ "$FORCE_UPDATE" == "true" ]]; then
-    git push -f $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
+    #git push -f $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
+    git push -f $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags
   else
-    git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
+    #git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags --prune
+    git push $DST_TYPE master refs/remotes/origin/*:refs/heads/* --tags
   fi
 }
 
@@ -200,7 +204,7 @@ if [ ! -d "$CACHE_PATH" ]; then
 fi
 cd $CACHE_PATH
 
-get_repo_list ${DST_REPO_LIST_API} "/tmp/tmp-mirror-list-dst.txt"
+get_repo_list "${DST_REPO_LIST_API}" "${FN_LIST_DST}"
 
 for repo in $SRC_REPOS
 {
@@ -209,7 +213,7 @@ for repo in $SRC_REPOS
 
     clone_repo $repo || echo "clone and cd failed"
 
-    create_repo $repo $DST_TOKEN "/tmp/tmp-mirror-list-dst.txt" || echo "create failed"
+    create_repo $repo $DST_TOKEN "${FN_LIST_DST}" || echo "create failed"
 
     update_repo || echo "Update failed"
 
